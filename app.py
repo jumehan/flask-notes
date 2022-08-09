@@ -50,7 +50,7 @@ def register():
         session["user_username"] = user.username
 
         # on successful login, redirect to secret page
-        return redirect("/secret")
+        return redirect(f"/users/{username}")
 
     else:
         return render_template("register.html", form=form)
@@ -63,15 +63,15 @@ def login():
     form = LoginForm()
 
     if form.validate_on_submit():
-        name = form.username.data
+        username = form.username.data
         password = form.password.data
 
         # authenticate will return a user or False
-        user = User.authenticate(name, password)
+        user = User.authenticate(username, password)
 
         if user:
             session["user_username"] = user.username  # keep logged in
-            return redirect("/secret")
+            return redirect(f"/users/{username}")
 
         else:
             form.username.errors = ["Bad name/password"]
@@ -80,20 +80,39 @@ def login():
 # end-login
 
 
-@app.get("/secret")
-def secret():
+@app.get("/users/<username>")
+def show_user_profile(username):
     """Example hidden page for logged-in users only."""
+    form = CSRFProtectForm()
+    user = User.query.get_or_404(username)
 
+    #Authentication
     if "user_username" not in session:
         flash("You must be logged in to view!")
         return redirect("/")
 
-        # alternatively, can return HTTP Unauthorized status:
-        #
-        # from werkzeug.exceptions import Unauthorized
-        # raise Unauthorized()
+    #Authorization
+    if session["user_username"] != username:
+        curr_user_username = session["user_username"]
+        flash("You're not allowed here!")
+
+        return redirect (f"/users/{curr_user_username}")
+
 
     else:
-        return render_template("secret.html", msg = "You made it")
+        return render_template("user.html", user=user, form=form)
+
+@app.post("/logout")
+def logout():
+    """Log user out and redirects to homepage"""
+
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit:
+        # Remove "user_username" if present, but no errors if it wasn't
+        flash("Logout successful")
+        session.pop("user_username", None)
+
+    return redirect("/")
 
 

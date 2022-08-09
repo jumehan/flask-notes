@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <h1>Welcome, {{user.first_name}} {{user.last_name}} </h1>
+
+
+<ul>
+
+  <li>Username: {{user.username}}</li>
+  <li>First name: {{user.first_name}}</li>
+  <li>Last name: {{user.last_name}}</li>
+  <li>Email: {{user.email}}</li>
+
+</ul>
+
+{% if 'user_username' in session %}
+
+<form action="/logout" method="POST">
+  {% include "_form.html" %}
+  <button type="submit" class="btn btn-primary">Logout</button>
+</form>
+{% endif %}
+
+{% endblock %}
