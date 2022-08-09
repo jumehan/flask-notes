@@ -1,12 +1,12 @@
 """Flask app for Cupcakes"""
 
-from flask import Flask, request, jsonify, render_template
-
-from models import db, connect_db, Cupcake, DEFAULT_IMAGE
+from flask import Flask, request, render_template, redirect, session, flash
+from models import db, connect_db, User
+from forms import RegisterForm, LoginForm, CSRFProtectForm
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///cupcakes'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///flask_notes'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = "oh-so-secret"
 app.config['SQLALCHEMY_ECHO'] = True
@@ -18,56 +18,78 @@ connect_db(app)
 
 @app.get("/")
 def root():
-    """Render homepage."""
-
-    return render_template("index.html")
-
-
-@app.get("/api/cupcakes")
-def list_cupcakes():
-    """Return all cupcakes in system.
-
-    Returns JSON like:
-        {cupcakes: [{id, flavor, rating, size, image}, ...]}
-    """
-
-    cupcakes = [cupcake.to_dict() for cupcake in Cupcake.query.all()]
-    return jsonify(cupcakes=cupcakes)
+    """Redirect to /register"""
+    return redirect("/register")
 
 
-@app.post("/api/cupcakes")
-def create_cupcake():
-    """Add cupcake, and return data about new cupcake.
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Register user: produce form & handle form submission."""
 
-    Returns JSON like:
-        {cupcake: [{id, flavor, rating, size, image}]}
-    """
+    form = RegisterForm()
 
-    data = request.json
-
-    cupcake = Cupcake(
-        flavor=data['flavor'],
-        rating=data['rating'],
-        size=data['size'],
-        image=data['image'] or None)
-
-    db.session.add(cupcake)
-    db.session.commit()
-
-    # POST requests should return HTTP status of 201 CREATED
-    return (jsonify(cupcake=cupcake.to_dict()), 201)
+    if form.validate_on_submit():
+        name = form.username.data
+        password = form.password.data
+        email = form.email.data
+        first_name = form.first_name.data
+        last_name = form.last_name.data
 
 
-@app.get("/api/cupcakes/<int:cupcake_id>")
-def get_cupcake(cupcake_id):
-    """Return data on specific cupcake.
+        user = User.register(name, password, email, first_name, last_name)
+        db.session.add(user)
+        db.session.commit()
 
-    Returns JSON like:
-        {cupcake: [{id, flavor, rating, size, image}]}
-    """
+        session["user_id"] = user.id
 
-    cupcake = Cupcake.query.get_or_404(cupcake_id)
-    return jsonify(cupcake=cupcake.to_dict())
+        # on successful login, redirect to secret page
+        return redirect("/secret")
+
+    else:
+        return render_template("register.html", form=form)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Produce login form or handle login."""
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        name = form.username.data
+        password = form.password.data
+
+        # authenticate will return a user or False
+        user = User.authenticate(name, password)
+
+        if user:
+            session["user_id"] = user.id  # keep logged in
+            return redirect("/secret")
+
+        else:
+            form.username.errors = ["Bad name/password"]
+
+    return render_template("login.html", form=form)
+# end-login
+
+
+@app.get("/secret")
+def secret():
+    """Example hidden page for logged-in users only."""
+
+    if "user_id" not in session:
+        flash("You must be logged in to view!")
+        return redirect("/")
+
+        # alternatively, can return HTTP Unauthorized status:
+        #
+        # from werkzeug.exceptions import Unauthorized
+        # raise Unauthorized()
+
+    else:
+        return render_template("secret.html", msg = "You made it")
+
+
 
 
 @app.patch("/api/cupcakes/<int:cupcake_id>")

@@ -1,0 +1,29 @@
+{{ form.hidden_tag() }}
+
+{% for field in form if field.widget.input_type != 'hidden' %}
+
+  <div class='mb-3'>
+
+    {{ field.label }}
+
+    {% if field.type == "PasswordField" %}
+
+      {{ field( type="password", class="form-control") }}
+
+    {% else %}
+
+      {{ field(class="form-control") }}
+
+    {% endif %}
+
+    <span>
+      {% if field.errors %}
+        {% for error in field.errors %}
+          <b class="text-danger">{{ error }}</b>
+        {% endfor %}
+      {% endif %}
+    </span>
+
+  </div>
+
+{% endfor %}
