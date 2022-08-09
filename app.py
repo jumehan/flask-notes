@@ -12,8 +12,7 @@ app.config['SECRET_KEY'] = "oh-so-secret"
 app.config['SQLALCHEMY_ECHO'] = True
 
 connect_db(app)
-
-
+db.create_all()
 
 
 @app.get("/")
@@ -29,18 +28,26 @@ def register():
     form = RegisterForm()
 
     if form.validate_on_submit():
-        name = form.username.data
+        username = form.username.data
         password = form.password.data
         email = form.email.data
         first_name = form.first_name.data
         last_name = form.last_name.data
 
+        # check if user/email is already registered to an account
+        if User.query.filter_by(username=username).count() > 0:
+            form.username.errors = ["Username already taken"]
+            return render_template("register.html", form=form)
 
-        user = User.register(name, password, email, first_name, last_name)
+        if User.query.filter_by(email=email).count() > 0:
+            form.email.errors = ["Email already taken"]
+            return render_template("register.html", form=form)
+
+        user = User.register(username, password, email, first_name, last_name)
         db.session.add(user)
         db.session.commit()
 
-        session["user_id"] = user.id
+        session["user_username"] = user.username
 
         # on successful login, redirect to secret page
         return redirect("/secret")
@@ -63,7 +70,7 @@ def login():
         user = User.authenticate(name, password)
 
         if user:
-            session["user_id"] = user.id  # keep logged in
+            session["user_username"] = user.username  # keep logged in
             return redirect("/secret")
 
         else:
@@ -77,7 +84,7 @@ def login():
 def secret():
     """Example hidden page for logged-in users only."""
 
-    if "user_id" not in session:
+    if "user_username" not in session:
         flash("You must be logged in to view!")
         return redirect("/")
 
@@ -90,43 +97,3 @@ def secret():
         return render_template("secret.html", msg = "You made it")
 
 
-
-
-@app.patch("/api/cupcakes/<int:cupcake_id>")
-def update_cupcake(cupcake_id):
-    """Update cupcake from data in request. Return updated data.
-
-    Returns JSON like:
-        {cupcake: [{id, flavor, rating, size, image}]}
-    """
-
-    data = request.json
-
-    cupcake = Cupcake.query.get_or_404(cupcake_id)
-
-    cupcake.flavor = data.get('flavor', cupcake.flavor)
-    cupcake.rating = data.get('rating', cupcake.rating)
-    cupcake.size = data.get('size', cupcake.size)
-
-    if "image" in data:
-        cupcake.image = data['image'] or DEFAULT_IMAGE
-
-    db.session.add(cupcake)
-    db.session.commit()
-
-    return jsonify(cupcake=cupcake.to_dict())
-
-
-@app.delete("/api/cupcakes/<int:cupcake_id>")
-def remove_cupcake(cupcake_id):
-    """Delete cupcake and return confirmation message.
-
-    Returns JSON of {message: "Deleted"}
-    """
-
-    cupcake = Cupcake.query.get_or_404(cupcake_id)
-
-    db.session.delete(cupcake)
-    db.session.commit()
-
-    return jsonify(deleted=cupcake_id)
