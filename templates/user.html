@@ -22,4 +22,14 @@
 </form>
 {% endif %}
 
+<a href="{{user.username}}/notes/add">Add note</a>
+
+{% if 'user_username' in session %}
+
+<form action="/delete" method="POST">
+  {% include "_form.html" %}
+  <button type="submit" class="btn btn-primary">Delete</button>
+</form>
+{% endif %}
+
 {% endblock %}
