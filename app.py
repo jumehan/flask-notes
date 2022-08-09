@@ -12,7 +12,7 @@ app.config['SECRET_KEY'] = "oh-so-secret"
 app.config['SQLALCHEMY_ECHO'] = True
 
 connect_db(app)
-db.create_all()
+# db.create_all() - do this in ipython
 
 
 @app.get("/")
@@ -35,7 +35,10 @@ def register():
         last_name = form.last_name.data
 
         # check if user/email is already registered to an account
+        # try db.session commit and if there's an error do try-except SQLA Integrity Error
         if User.query.filter_by(username=username).count() > 0:
+            #one_or_None or one and make sure it's not None
+            #do username =.. or email=..
             form.username.errors = ["Username already taken"]
             return render_template("register.html", form=form)
 
@@ -47,7 +50,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        session["user_username"] = user.username
+        session["user_username"] = user.username #put session["username"] and set it as global constant
 
         # on successful login, redirect to secret page
         return redirect(f"/users/{username}")
@@ -93,10 +96,9 @@ def show_user_profile(username):
 
     #Authorization
     if session["user_username"] != username:
-        curr_user_username = session["user_username"]
         flash("You're not allowed here!")
 
-        return redirect (f"/users/{curr_user_username}")
+        return redirect (f"/users/{session['user_username']}")
 
 
     else:
