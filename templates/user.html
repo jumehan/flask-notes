@@ -14,6 +14,31 @@
 
 </ul>
 
+<h3>Notes</h3>
+<ul>
+  {%for note in user.notes%}
+
+  <li><a class="btn btn-primary" href="/notes/{{note.id}}/update">update</a>
+
+<form action="/notes/{{note.id}}/delete" method="POST">
+  {% include "_form.html" %}
+  <button type="submit" class="btn btn-primary">delete</button>
+</form>
+
+    <h5> {{note.title}}</h5> {{note.content}}</li>
+
+  {%endfor%}
+</ul>
+
+
+
+
+
+<a href="{{user.username}}/notes/add">Add note</a>
+
+
+
+
 {% if 'user_username' in session %}
 
 <form action="/logout" method="POST">
@@ -22,14 +47,10 @@
 </form>
 {% endif %}
 
-<a href="{{user.username}}/notes/add">Add note</a>
 
-{% if 'user_username' in session %}
-
-<form action="/delete" method="POST">
+<form action="/users/{{user.username}}/delete" method="POST">
   {% include "_form.html" %}
   <button type="submit" class="btn btn-primary">Delete</button>
 </form>
-{% endif %}
 
 {% endblock %}

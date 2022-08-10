@@ -29,3 +29,10 @@ class NewNoteForm(FlaskForm):
 
     title = StringField("Title", validators=[InputRequired()])
     content = TextAreaField("Content", validators=[InputRequired()])
+
+class EditNoteForm(FlaskForm):
+    """Form for editing an existing note"""
+
+    title = StringField("Title", validators=[InputRequired()])
+    content = TextAreaField("Content", validators=[InputRequired()])
+

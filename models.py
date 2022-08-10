@@ -53,7 +53,7 @@ class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text(), nullable=False)
-    owner = db.Column(db.String(20), db.ForeignKey("users.username"))
+    owner = db.Column(db.String(20), db.ForeignKey("users.username"), nullable=False)
 
 
 def connect_db(app):
